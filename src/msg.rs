@@ -12,32 +12,13 @@ pub enum ExecuteMsg {
     Transfer {
         address: String,
     },
-    IbcTransfer {
-        channel_id: String,
-        address: String,
-    },
+
     Swap {
         pool_id: u64,
         token_out_denom: String,
         token_out_min_amount: String,
         to: Addr
-    },
-    // todo: Purchase via nft mint just for HackAtom explanation,
-    //  need to change it to real NFT purchase on market
-    // PurchaseNFT {
-    //     owner: String,
-    //     contract_addr: String,
-    //     token_id: String,
-    //     token_uri: String,
-    // },
-    // ContractHop {
-    //     contract_addr: String,
-    //     commands: Vec<ExecuteMsg>,
-    // },
-    // IbcContractHop {
-    //     channel: String,
-    //     commands: Vec<ExecuteMsg>
-    // },
+    },    
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

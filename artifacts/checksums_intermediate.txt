@@ -1,0 +1,1 @@
+92fb5e5fc1fd7b98054d7e94e4526e1c4e9d2451dc01896daa660d71e1d1ad92  ./target/wasm32-unknown-unknown/release/blazarbit_protocol.wasm
