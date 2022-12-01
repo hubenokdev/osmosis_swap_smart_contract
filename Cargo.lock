@@ -247,6 +247,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw0"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ae676b6cced78a3d38ad4b01ab4ed66fc78ac191c3c0d6bfd5372cb2efd473b"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw2"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -254,6 +266,18 @@ checksum = "04cf4639517490dd36b333bbd6c4fbd92e325fd0acf4683b41753bc5eb63bfc1"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw20"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56fc9d54b9b365801beb101a5c0375dceaa5a285bfc14438a7b6007f9d362142"
+dependencies = [
+ "cosmwasm-std",
+ "cw0",
  "schemars",
  "serde",
 ]
@@ -529,6 +553,7 @@ dependencies = [
  "cw-osmo-proto",
  "cw-storage-plus",
  "cw2",
+ "cw20",
  "cw721-base",
  "osmosis-std",
  "prost 0.9.0",

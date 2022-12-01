@@ -4,7 +4,7 @@
 
 NETWORK=testnet
 FUNCTION=$1
-CATEGORY=blazarbit_protocol
+CATEGORY=osmosis_egotrade
 PARAM_1=$3
 PARAM_2=$4
 PARAM_3=$5
@@ -150,7 +150,7 @@ Upload() {
         sleep 3
         CODE_ID=$(osmosisd query tx $UPLOADTX $NODECHAIN --output json | jq -r '.logs[0].events[-1].attributes[1].value')
     done
-    echo "Contract Code_id:"$CODE_ID
+    echo "Contract Code_id: "$CODE_ID
 
     #save to FILE_CODE_ID
     echo $CODE_ID > $INFO_DIR"code_"$CATEGORY".txt"
@@ -159,8 +159,8 @@ Upload() {
 
 
 InstantiateSwapOsmo() {
-    CODE_SWAPOSMO=4193
-    TXHASH=$(osmosisd tx wasm instantiate $CODE_SWAPOSMO '{}' --label "MarblenautsSale$CODE_SWAPOSMO" --admin $ADDR_ADMIN $WALLET $TXFLAG -y --output json | jq -r '.txhash')
+    CODE_SWAPOSMO=4319
+    TXHASH=$(osmosisd tx wasm instantiate $CODE_SWAPOSMO '{}' --label "TESTos$CODE_SWAPOSMO" --admin $ADDR_ADMIN $WALLET $TXFLAG -y --output json | jq -r '.txhash')
     echo $TXHASH
     CONTRACT_ADDR=""
     while [[ $CONTRACT_ADDR == "" ]]
@@ -176,6 +176,47 @@ InstantiateSwapOsmo() {
 ###################################################################################################
 ###################################################################################################
 ###################################################################################################
+
+SetAdmin()
+{
+    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    {
+        "set_admin":{
+            "new_admin":"osmo1hmtklnl8aque00rvewtd5pxve388zjkxwpg3wm" }
+        
+    }
+    ' --amount 1000uosmo $WALLET $TXFLAG -y    
+}
+
+SetBot()
+{
+    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    {
+        "set_bot_role":{
+            "new_bot":"osmo1hmtklnl8aque00rvewtd5pxve388zjkxwpg3wm", "enabled":true
+        }
+    }
+    ' --amount 1000uosmo $WALLET $TXFLAG -y    
+}
+
+SwapOsmo2()
+{
+    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    {"buy_token":
+        {
+            "osmo_amount":"23000", 
+            "pool_id":1,
+            "denom_token":"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+            "token_amount_per_native":"96000", 
+            "slippage_bips":"100", 
+            "recipient":"osmo15tl3jjhmf9tl2k6qkgfs3ky4lk9rfrkzr7ayv6", 
+            "platform_fee_bips":"2000", 
+            "gas_estimate":"2500", 
+            "deadline":"1761969188"
+        }
+    }
+    ' --amount 1000uosmo $WALLET $TXFLAG -y    
+}
 
 SwapOsmo2()
 {

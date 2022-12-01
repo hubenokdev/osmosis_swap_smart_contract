@@ -1,15 +1,13 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::{entry_point,  DepsMut, Env, MessageInfo, Response, BankMsg,  Coin, SubMsg, Addr
-    , SubMsgResult, SubMsgResponse, Reply, Uint128, };
+use cosmwasm_std::{entry_point, Deps, DepsMut, Env, MessageInfo, Response, Reply, Uint128, StdResult, Binary, to_binary};
 use cw2::set_contract_version;
-use cw_osmo_proto::osmosis::gamm::v1beta1::{ MsgSwapExactAmountIn, MsgSwapExactAmountInResponse, SwapAmountInRoute as Osmo_SwapAmountInRoute };
-use cw_osmo_proto::cosmos::base::v1beta1::{ Coin as Osmo_Coin };
-use cw_osmo_proto::proto_ext::{MessageExt};
-use cw_osmo_proto::proto_ext::proto_decode;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
-use crate::state::{SWAP_TO_REPLY_STATES, SwapMsgReplyState};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, AllInfos};
+use crate::state::{SWAP_TO_REPLY_STATES, config_read, config, State};
+use crate::execute::{execute_transfer, buy_token, handle_swap_reply, try_set_admin, try_set_bot_role, try_withdraw_fee};
+use crate::helpers;
+use cw20::Denom;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "osmo.trade.bot";
@@ -17,38 +15,6 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// packets live one hour
 pub const PACKET_LIFETIME: u64 = 60 * 60;
 pub const SWAP_REPLY_ID: u64 = 1u64;
-
-pub trait GammResult {
-    fn amount(&self) -> &String;
-}
-
-impl GammResult for MsgSwapExactAmountInResponse {
-    fn amount(&self) -> &String {
-        &self.token_out_amount
-    }
-}
-
-pub fn parse_coin(value: &str) -> Result<Coin, ContractError> {
-    let mut num_str = vec![];
-    for c in value.chars() {
-        if !c.is_numeric() {
-            break;
-        }
-
-        num_str.push(c)
-    }
-
-    let amount_str: String = num_str.into_iter().collect();
-    let amount = amount_str
-        .parse::<u128>()
-        .map_err(|_| ContractError::InvalidAmountValue {})?;
-    let denom = value.replace(amount_str.as_str(), "");
-
-    Ok(Coin {
-        amount: amount.into(),
-        denom,
-    })
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -59,6 +25,13 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    let state = State {
+        owner: _info.sender.clone(),
+        pending_platform_fee: Uint128::zero(),
+    };
+
+    config(deps.storage).save(&state)?;
+
     Ok(Response::new()
         .add_attribute("method", "instantiate"))
 }
@@ -66,72 +39,36 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    let mut state = config_read(deps.storage).load()?;
     match msg {
+        ExecuteMsg::SetAdmin { new_admin } => try_set_admin(deps, &mut state, info, new_admin),
+        ExecuteMsg::SetBotRole { new_bot, enabled } => try_set_bot_role(deps, state, info, new_bot, enabled),
+        ExecuteMsg::BuyToken {osmo_amount, pool_id, denom_token, token_amount_per_native, slippage_bips
+            , recipient, platform_fee_bips, gas_estimate, deadline} => 
+                buy_token(deps
+                    , &mut state
+                    , info
+                    , env
+                    , osmo_amount
+                    , pool_id
+                    , denom_token
+                    , token_amount_per_native
+                    , slippage_bips
+                    , platform_fee_bips
+                    , gas_estimate
+                    , deadline.u64()
+                    , recipient
+                    , SWAP_REPLY_ID),      
+
+        ExecuteMsg::WithdrawFee { to, amount } => try_withdraw_fee(deps, &mut state, info, to, amount),
+
         ExecuteMsg::Transfer { address } => execute_transfer(deps, info, address),
-        ExecuteMsg::Swap { pool_id, token_out_denom, token_out_min_amount, to } => execute_swap(deps, _env.contract.address.into(), info, pool_id, token_out_denom, token_out_min_amount, to),
+        //ExecuteMsg::Swap { pool_id, token_out_denom, token_out_min_amount, to } => execute_swap(deps, env.contract.address.into(), info, pool_id, token_out_denom, token_out_min_amount, to),
     }
-}
-
-pub fn execute_transfer(deps: DepsMut, _info: MessageInfo, addr: String) -> Result<Response, ContractError> {
-    let to_addr = match deps.api.addr_validate(addr.clone().as_str()).ok() {
-        Some(x) => x,
-        None => return Err(ContractError::Unauthorized {}),
-    };
-
-    //let to_addr = addr;
-    let mut sent_funds: Vec<Coin> = Vec::new();
-    sent_funds.push(Coin::new(140000, "uosmo"));// info.funds.clone();
-    let msg = BankMsg::Send {
-        to_address: to_addr.into(),
-        amount: sent_funds,
-    };
-
-    Ok(Response::new()
-        .add_attribute("method", "execute_transfer")
-        .add_message(msg)
-    )
-}
-
-pub fn execute_swap(deps: DepsMut, self_address: String, info: MessageInfo, pool_id: u64, token_out_denom: String, token_out_min_amount: String, to: Addr) -> Result<Response, ContractError> {
-    let funds = info.funds.clone().pop().unwrap();
-    let coin = Osmo_Coin {
-        denom: funds.denom,
-        amount: String::from("230000")
-        //amount: funds.amount.to_string()
-    };
-
-    let mut osmo_routes: Vec<Osmo_SwapAmountInRoute> = Vec::new();
-    osmo_routes.push(Osmo_SwapAmountInRoute {
-        pool_id,
-        token_out_denom: token_out_denom.clone(),
-    });
-
-    let msg = MsgSwapExactAmountIn {
-        sender: self_address,
-        routes: osmo_routes,
-        token_in: Option::from(coin),
-        token_out_min_amount,
-    };
-
-    let data = SwapMsgReplyState{denom_out: token_out_denom, to};
-
-    SWAP_TO_REPLY_STATES.save(
-        deps.storage,
-        SWAP_REPLY_ID,
-        &data
-    )?;
-
-    let msg = msg.to_msg()?;
-
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(msg, SWAP_REPLY_ID))
-        .add_attribute("method", "execute_swap")
-    )
-
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -151,56 +88,21 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     }
 }
 
-pub const SWAP_EVENT: &str = "token_swapped";
-pub const SWAP_ATTR: &str = "tokens_out";
-
-pub fn handle_swap_reply(
-    _deps: DepsMut,
-    msg: Reply,
-    send_to: SwapMsgReplyState,
-) -> Result<Response, ContractError> {
-
-    match msg.result {
-        SubMsgResult::Ok(tx) => {
-            let gamm_res = parse_gamm_result::<MsgSwapExactAmountInResponse>(tx);
-                
-            match gamm_res {
-                Ok(amount_out) => {
-                    let mut new_coin = Vec::new();
-                    new_coin.push(Coin::new(amount_out, send_to.denom_out));
-
-                    let bank_msg = BankMsg::Send {
-                        to_address: send_to.to.into_string(),
-                        amount: new_coin,
-                    };
-                    return Ok(Response::new()
-                        .add_message(bank_msg)
-                        .add_attribute("token_out_amount", Uint128::from(amount_out)));
-                }
-                Err(err) => {
-                    Err(err)
-                }
-            }
-        }
-        SubMsgResult::Err(err) => {
-            Err(ContractError::FailedSwap {
-                reason: err,
-            })
-        }
-    }    
+#[entry_point]
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetInfos {token} => to_binary(&query_infos(deps, env, token)?),
+    }
 }
 
-
-pub fn parse_gamm_result<M: GammResult + cw_osmo_proto::Message + std::default::Default>(
-    msg: SubMsgResponse
-) -> Result<u128, ContractError> {
-
-    let data = msg.data.ok_or(ContractError::NoReplyData {})?;
-    let response: M = proto_decode(data.as_slice())?;
-    let amount = response
-        .amount()
-        .parse::<u128>()
-        .map_err(|_| ContractError::InvalidAmountValue {})?;
-
-    Ok(amount)
+fn query_infos(deps: Deps, env: Env, token: String) -> StdResult<AllInfos> {
+    let state = config_read(deps.storage).load()?;
+    let admin = state.owner;
+    let pending_platform_fee = state.pending_platform_fee;
+    let blocktime = env.block.time.seconds();
+    let contract_address = env.contract.address.clone();
+    let token_balance = helpers::get_token_amount(deps.querier, Denom::Native(token), env.contract.address.clone())?;
+    let token_balances = helpers::get_tokens_amounts(deps.querier, env.contract.address)?;
+    
+    Ok(AllInfos { admin, pending_platform_fee, blocktime, token_balance, token_balances, contract_address })
 }

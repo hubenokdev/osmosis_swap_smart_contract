@@ -9,9 +9,18 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("Escrow expired ")]
+    Expired {},
+
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Unauthorized Role")]
+    UnauthorizedRole {},
+
+    #[error("Insufficient amount")]
+    InsufficientToken {},
+    
     #[error("x/gamm result not found")]
     GammResultNotFound {},
 
@@ -21,6 +30,9 @@ pub enum ContractError {
     #[error("Invalid amount value")]
     InvalidAmountValue {},
 
+    #[error("Buying Utility Over Slippages")]
+    BuyingUtilityOverSlippages {},
+    
     #[error("Failed Swap: {reason:?}")]
     FailedSwap { reason: String },
     
