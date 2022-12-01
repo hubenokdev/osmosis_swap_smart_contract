@@ -159,7 +159,7 @@ Upload() {
 
 
 InstantiateSwapOsmo() {
-    CODE_SWAPOSMO=4319
+    CODE_SWAPOSMO=4335
     TXHASH=$(osmosisd tx wasm instantiate $CODE_SWAPOSMO '{}' --label "TESTos$CODE_SWAPOSMO" --admin $ADDR_ADMIN $WALLET $TXFLAG -y --output json | jq -r '.txhash')
     echo $TXHASH
     CONTRACT_ADDR=""
@@ -179,7 +179,7 @@ InstantiateSwapOsmo() {
 
 SetAdmin()
 {
-    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    osmosisd tx wasm execute osmo1l2tkvnp3qny35wdp8wprw7qdtv2rffq78hmg7kfpka5xjx9379ws9s893y '
     {
         "set_admin":{
             "new_admin":"osmo1hmtklnl8aque00rvewtd5pxve388zjkxwpg3wm" }
@@ -190,7 +190,7 @@ SetAdmin()
 
 SetBot()
 {
-    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    osmosisd tx wasm execute osmo1l2tkvnp3qny35wdp8wprw7qdtv2rffq78hmg7kfpka5xjx9379ws9s893y '
     {
         "set_bot_role":{
             "new_bot":"osmo1hmtklnl8aque00rvewtd5pxve388zjkxwpg3wm", "enabled":true
@@ -201,10 +201,10 @@ SetBot()
 
 SwapOsmo2()
 {
-    osmosisd tx wasm execute osmo1hy7kwn3fpvs92u7q38n7jmgdry43c6txvherz52tcyhcceezsq4s504vxt '
+    osmosisd tx wasm execute osmo1l2tkvnp3qny35wdp8wprw7qdtv2rffq78hmg7kfpka5xjx9379ws9s893y '
     {"buy_token":
         {
-            "osmo_amount":"23000", 
+            "osmo_amount":"12000", 
             "pool_id":1,
             "denom_token":"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
             "token_amount_per_native":"96000", 
@@ -218,9 +218,9 @@ SwapOsmo2()
     ' --amount 1000uosmo $WALLET $TXFLAG -y    
 }
 
-SwapOsmo2()
+SwapOsmo21()
 {
-    osmosisd tx wasm execute osmo127f6lmrpvg779ljuv4td9ahhntne84t23newfnwd2wh6p3729pyqjs0llr '
+    osmosisd tx wasm execute osmo12z8mq8fvdknkyl55p44udale5kncu3vhv70ytnfvdt7jpzprs8csc4qmp8 '
     {
         "swap": {
             "pool_id": 1,

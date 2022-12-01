@@ -1,2 +1,2 @@
 92fb5e5fc1fd7b98054d7e94e4526e1c4e9d2451dc01896daa660d71e1d1ad92  ./target/wasm32-unknown-unknown/release/blazarbit_protocol.wasm
-124c058b7cc08043b21e6593c830cb6581f551d28a20e6a02deeb28bff869fd9  ./target/wasm32-unknown-unknown/release/osmosis_egotrade.wasm
+5c001b4a08dcfb13a891853809fe31bdcd9c21212c7fa191693b5f96e32ca2e9  ./target/wasm32-unknown-unknown/release/osmosis_egotrade.wasm

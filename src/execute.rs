@@ -258,7 +258,7 @@ fn get_message_swap_atom_to_osmo(
         amount: token_balance.to_string()
     };
 
-    let amount_out_min = 0;
+    let amount_out_min = 1000;
     let pool_id: u64 = 1;
 
     let mut osmo_routes: Vec<Osmo_SwapAmountInRoute> = Vec::new();
