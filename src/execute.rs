@@ -10,7 +10,6 @@ use crate::error::ContractError;
 use crate::state::{SWAP_TO_REPLY_STATES, SwapMsgReplyState, State, config, config_read, BOT_ROLES};
 use crate::helpers;
 const ATOM_DENOM: &str = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"; //ibc atom token on osmo
-const atom_pool_id: u64 = 1;
 
 pub fn execute_transfer(deps: DepsMut, _info: MessageInfo, addr: String) -> Result<Response, ContractError> {
     let to_addr = match deps.api.addr_validate(addr.clone().as_str()).ok() {
