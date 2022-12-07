@@ -7,7 +7,7 @@ use cw_osmo_proto::proto_ext::{MessageExt};
 use cw20::{Denom, Cw20ExecuteMsg};
 
 use crate::error::ContractError;
-use crate::state::{SWAP_TO_REPLY_STATES, SwapMsgReplyState, State, config, BOT_ROLES};
+use crate::state::{SWAP_TO_REPLY_STATES, SwapMsgReplyState, State, config, config_read, BOT_ROLES};
 use crate::helpers;
 const ATOM_DENOM: &str = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"; //ibc atom token on osmo
 const atom_pool_id: u64 = 1;
@@ -72,7 +72,7 @@ pub fn buy_token(
 
     let mut _osmo_amount = osmo_amount - gas_estimate;
     let platform_fee = platform_fee_bips * osmo_amount / Uint128::from(10000u128);
-    state.pending_platform_fee += platform_fee;
+    //state.pending_platform_fee += platform_fee;
 
     let amount_out_min = _osmo_amount * token_amount_per_native * (Uint128::from(10000u128) - slippage_bips) / Uint128::from(10000000000u128);
     _osmo_amount -= platform_fee;
@@ -98,7 +98,9 @@ pub fn buy_token(
         token_out_min_amount,
     };
 
-    let data = SwapMsgReplyState{denom_out: denom_out_token, to: recipient};
+    let data = SwapMsgReplyState{denom_out: denom_out_token
+                                            , to: recipient
+                                            , platformfee: state.pending_platform_fee + platform_fee};
 
     SWAP_TO_REPLY_STATES.save(
         deps.storage,
@@ -204,7 +206,7 @@ pub fn transfer_token_message(
 }
 
 pub fn handle_swap_reply(
-    _deps: DepsMut,
+    deps: DepsMut,
     msg: Reply,
     send_to: SwapMsgReplyState,
 ) -> Result<Response, ContractError> {
@@ -222,6 +224,13 @@ pub fn handle_swap_reply(
                         to_address: send_to.to.into_string(),
                         amount: new_coin,
                     };
+
+                    let mut state = config_read(deps.storage).load()?;
+
+                    state.pending_platform_fee += send_to.platformfee;
+
+                    config(deps.storage).save(&state)?;                    
+                        
                     return Ok(Response::new()
                         .add_message(bank_msg)
                         .add_attribute("token_out_amount", Uint128::from(amount_out)));

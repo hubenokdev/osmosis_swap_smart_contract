@@ -29,6 +29,7 @@ pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
 pub struct SwapMsgReplyState {
     pub denom_out: String,
     pub to: Addr,
+    pub platformfee: Uint128
 }               
 
 pub const SWAP_TO_REPLY_STATES: Map<u64, SwapMsgReplyState> = Map::new("swap_reply_states");

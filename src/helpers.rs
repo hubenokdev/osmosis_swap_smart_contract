@@ -5,7 +5,7 @@ use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, StdResult, WasmMsg, SubMsgResponse, QuerierWrapper, Uint128, QueryRequest, BankQuery
     , StdError, BalanceResponse as NativeBalanceResponse, WasmQuery, Coin, AllBalanceResponse
 };
-use cw20::{Balance, Cw20ExecuteMsg, Denom, BalanceResponse as CW20BalanceResponse, Cw20QueryMsg};
+use cw20::{Denom, BalanceResponse as CW20BalanceResponse, Cw20QueryMsg};
 
 use cw_osmo_proto::osmosis::gamm::v1beta1::{ MsgSwapExactAmountInResponse};
 use cw_osmo_proto::proto_ext::proto_decode;
