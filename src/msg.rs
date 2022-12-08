@@ -33,16 +33,6 @@ pub enum ExecuteMsg {
         , deadline: Uint64
     },
 
-    Transfer {
-        address: String,
-    },
-
-    // Swap {
-    //     pool_id: u64,
-    //     token_out_denom: String,
-    //     token_out_min_amount: String,
-    //     to: Addr
-    // },    
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

@@ -66,8 +66,6 @@ pub fn execute(
 
         ExecuteMsg::WithdrawFee { to, amount } => try_withdraw_fee(deps, &mut state, info, to, amount),
 
-        ExecuteMsg::Transfer { address } => execute_transfer(deps, info, address),
-        //ExecuteMsg::Swap { pool_id, token_out_denom, token_out_min_amount, to } => execute_swap(deps, env.contract.address.into(), info, pool_id, token_out_denom, token_out_min_amount, to),
     }
 }
 
